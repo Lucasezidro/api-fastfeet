@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  delivery
+}
+
+model User {
+  userId         String     @id @default(cuid()) @map("user_id")
+  documentNumber String     @unique @map("document_number")
+  email          String     @unique
+  name           String
+  password       String
+  role           Role       @default(delivery)
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+  zipCode        String
+  city           String
+  street         String
+  neighborhood   String
+  state          String
+  country        String
+  complement     String?
+  orders         Order[]
+  delivery       Delivery[]
+
+  @@map("users")
+}
+
+enum StatusOrder {
+  wating
+  withdrawn
+  delivered
+  returned
+}
+
+model Order {
+  orderId     String      @id @default(cuid()) @map("user_id")
+  status      StatusOrder @default(wating)
+  postedIn    DateTime
+  withdrawnIn DateTime?
+  deliveredIn DateTime?
+  returnedIn  DateTime?
+
+  user        User   @relation(fields: [userOrderId], references: [userId])
+  userOrderId String @map("user_order_id")
+
+  @@map("orders")
+}
+
+enum VehicleType {
+  motocycle
+  car
+}
+
+model Delivery {
+  deliveryId   String      @id @default(cuid())
+  name         String
+  email        String      @unique
+  vehicleType  VehicleType @default(motocycle)
+  vehicleName  String
+  rating       Int?        @default(0)
+  licensePlate String
+  year         String
+  model        String
+  color        String
+
+  user            User   @relation(fields: [deliveredUserId], references: [userId])
+  deliveredUserId String
+
+  @@map("delivery")
+}
