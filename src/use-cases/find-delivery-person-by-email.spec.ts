@@ -1,21 +1,22 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { InMemoryUsersRepository } from '../repositories/in-memory/in-memory-users-repository'
-import { CreateDeliveryPersonUseCase } from './create-delivery-person'
 import { InMemoryDeliveryRepository } from '../repositories/in-memory/in-memory-delivery-repository'
-import { UnauthorizedError } from './errors/unauthorized-error'
+import { FindDeliveryPersonByEmailUseCase } from './find-delivery-person-by-id'
+import { BadRequestError } from './errors/bad-request-error'
 
 let usersRepository: InMemoryUsersRepository
 let deliveryRepository: InMemoryDeliveryRepository
-let sut: CreateDeliveryPersonUseCase
+let sut: FindDeliveryPersonByEmailUseCase
 
-describe('Create delivery person', () => {
+describe('Find delivery by email', () => {
   beforeEach(() => {
-    deliveryRepository = new InMemoryDeliveryRepository()
     usersRepository = new InMemoryUsersRepository()
-    sut = new CreateDeliveryPersonUseCase(deliveryRepository, usersRepository)
+
+    deliveryRepository = new InMemoryDeliveryRepository()
+    sut = new FindDeliveryPersonByEmailUseCase(deliveryRepository)
   })
 
-  it('should be able to register an account', async () => {
+  it('should be able to update delivery person', async () => {
     const user = await usersRepository.create({
       email: 'johndoe@exemple.com',
       name: 'John Doe',
@@ -31,7 +32,7 @@ describe('Create delivery person', () => {
       street: 'some street',
     })
 
-    const { delivery } = await sut.execute({
+    const createdDelivery = await deliveryRepository.create({
       name: 'Delivery men',
       email: 'deliverymen@email.com',
       rating: 3,
@@ -44,10 +45,14 @@ describe('Create delivery person', () => {
       deliveredUserId: user.userId,
     })
 
-    expect(delivery.deliveryId).toEqual(expect.any(String))
+    const { delivery } = await sut.execute({
+      email: createdDelivery.email,
+    })
+
+    expect(delivery.email).toEqual('deliverymen@email.com')
   })
 
-  it('should not be able to register an account if user is not admin', async () => {
+  it('should not be able to get an delivery person with unexinting email', async () => {
     const user = await usersRepository.create({
       email: 'johndoe@exemple.com',
       name: 'John Doe',
@@ -63,19 +68,23 @@ describe('Create delivery person', () => {
       street: 'some street',
     })
 
+    await deliveryRepository.create({
+      name: 'Delivery men',
+      email: 'deliverymen@email.com',
+      rating: 3,
+      vehicleType: 'car',
+      licensePlate: 'CAR-0000',
+      vehicleName: 'Fiesta',
+      color: 'Red',
+      year: '2013',
+      model: 'Ford',
+      deliveredUserId: user.userId,
+    })
+
     await expect(() =>
       sut.execute({
-        name: 'Delivery men',
-        email: 'deliverymen@email.com',
-        rating: 3,
-        vehicleType: 'car',
-        licensePlate: 'CAR-0000',
-        vehicleName: 'Fiesta',
-        color: 'Red',
-        year: '2013',
-        model: 'Ford',
-        deliveredUserId: user.userId,
+        email: 'wrong-email@email.com',
       }),
-    ).rejects.toBeInstanceOf(UnauthorizedError)
+    ).rejects.toBeInstanceOf(BadRequestError)
   })
 })

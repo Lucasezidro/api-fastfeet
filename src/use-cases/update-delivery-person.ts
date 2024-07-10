@@ -4,7 +4,7 @@ import { DeliveryRepository } from '../repositories/delivery-repository'
 import { BadRequestError } from './errors/bad-request-error'
 import { UnauthorizedError } from './errors/unauthorized-error'
 
-export interface CreateDeliveryPersonUserCaseRequest {
+export interface UpdateDeliveryPersonUserCaseRequest {
   name: string
   email: string
   vehicleType: 'motocycle' | 'car'
@@ -17,11 +17,11 @@ export interface CreateDeliveryPersonUserCaseRequest {
   deliveredUserId: string
 }
 
-export interface CreateDeliveryPersonUseCaseResponse {
+export interface UpdateDeliveryPersonUseCaseResponse {
   delivery: Delivery
 }
 
-export class CreateDeliveryPersonUseCase {
+export class UpdateDeliveryPersonUseCase {
   constructor(
     private deliveryRepository: DeliveryRepository,
     private usersRepository: UsersRepository,
@@ -38,10 +38,15 @@ export class CreateDeliveryPersonUseCase {
     model,
     color,
     deliveredUserId,
-  }: CreateDeliveryPersonUserCaseRequest): Promise<CreateDeliveryPersonUseCaseResponse> {
+  }: UpdateDeliveryPersonUserCaseRequest): Promise<UpdateDeliveryPersonUseCaseResponse> {
     const user = await this.usersRepository.findById(deliveredUserId)
+    const delivery = await this.deliveryRepository.findByEmail(email)
 
     if (!user) {
+      throw new BadRequestError()
+    }
+
+    if (!delivery) {
       throw new BadRequestError()
     }
 
@@ -49,18 +54,17 @@ export class CreateDeliveryPersonUseCase {
       throw new UnauthorizedError()
     }
 
-    const delivery = await this.deliveryRepository.create({
-      email,
-      name,
-      vehicleType,
-      rating,
-      licensePlate,
-      vehicleName,
-      year,
-      model,
-      color,
-      deliveredUserId,
-    })
+    delivery.email = email
+    delivery.name = name
+    delivery.vehicleType = vehicleType
+    delivery.rating = rating ?? 0
+    delivery.licensePlate = licensePlate
+    delivery.vehicleName = vehicleName
+    delivery.year = year
+    delivery.model = model
+    delivery.color = color
+
+    await this.deliveryRepository.update(delivery)
 
     return { delivery }
   }

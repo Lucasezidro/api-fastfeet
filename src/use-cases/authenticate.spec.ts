@@ -3,6 +3,7 @@ import { InMemoryUsersRepository } from '../repositories/in-memory/in-memory-use
 import { AuthenticateUseCase } from './authenticate'
 import { hash } from 'bcryptjs'
 import { makeUser } from './factories/make-user'
+import { InvalidCredentialError } from './errors/invalid-credentials-error'
 
 let usersRepository: InMemoryUsersRepository
 let sut: AuthenticateUseCase
@@ -44,7 +45,7 @@ describe('Authenticate user', () => {
         password,
         documentNumber: '652456584512',
       }),
-    ).rejects.toBeInstanceOf(Error)
+    ).rejects.toBeInstanceOf(InvalidCredentialError)
   })
 
   it('should not be able to authenticate with wrong password', async () => {
@@ -55,6 +56,6 @@ describe('Authenticate user', () => {
         password: '654321',
         documentNumber,
       }),
-    ).rejects.toBeInstanceOf(Error)
+    ).rejects.toBeInstanceOf(InvalidCredentialError)
   })
 })

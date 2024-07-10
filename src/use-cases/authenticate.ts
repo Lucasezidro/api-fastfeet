@@ -1,6 +1,7 @@
 import { User } from '@prisma/client'
 import { UsersRepository } from './../repositories/users-repository'
 import { compare } from 'bcryptjs'
+import { InvalidCredentialError } from './errors/invalid-credentials-error'
 
 interface AuthenticateUserCaseRequest {
   documentNumber: string
@@ -21,13 +22,13 @@ export class AuthenticateUseCase {
     const user = await this.usersRepository.findByDocumentNumber(documentNumber)
 
     if (!user) {
-      throw new Error()
+      throw new InvalidCredentialError()
     }
 
     const isPasswordExists = await compare(password, user.password)
 
     if (!isPasswordExists) {
-      throw new Error()
+      throw new InvalidCredentialError()
     }
 
     return { user }
